@@ -1,0 +1,1081 @@
+-- FROSTY SCRIPT HUB - CLEAN VERSION
+-- Paste this in your executor
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+-- Wait for player to load
+repeat wait() until player
+repeat wait() until player:FindFirstChild("PlayerGui")
+
+local playerGui = player.PlayerGui
+
+print("[FROSTY] Starting...")
+
+-- Script states
+local scriptStates = {
+	loopBring = false,
+	aimbot = false,
+	hitbox = false,
+	fantasma = false,
+	esp = false
+}
+
+local loopBringConnection = nil
+local fantasmaConnection = nil
+local espConnection = nil
+local espData = {}
+
+-- LOOPBRING FUNCTION
+local function startLoopBring()
+	if loopBringConnection then return end
+
+	loopBringConnection = RunService.Heartbeat:Connect(function()
+		pcall(function()
+			if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+				local root = player.Character.HumanoidRootPart
+
+				for _, otherPlayer in pairs(Players:GetPlayers()) do
+					if otherPlayer ~= player and otherPlayer.Character then
+						local theirRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+						if theirRoot then
+							theirRoot.CFrame = root.CFrame * CFrame.new(0, 0, -5)
+						end
+					end
+				end
+			end
+		end)
+	end)
+	print("[Gabo] LoopBring started!")
+end
+
+local function stopLoopBring()
+	if loopBringConnection then
+		loopBringConnection:Disconnect()
+		loopBringConnection = nil
+		print("[Gabo] LoopBring stopped!")
+	end
+end
+
+-- ESP FUNCTION
+local function startESP()
+	if espConnection then return end
+
+	local Camera = workspace.CurrentCamera
+
+	local function createESP(plr)
+		if espData[plr] then return end
+
+		local nameText = Drawing.new("Text")
+		nameText.Size = 16
+		nameText.Color = Color3.fromRGB(255, 255, 255)
+		nameText.Center = true
+		nameText.Outline = true
+		nameText.Font = 2
+		nameText.Visible = false
+
+		local distText = Drawing.new("Text")
+		distText.Size = 14
+		distText.Color = Color3.fromRGB(100, 200, 255)
+		distText.Center = true
+		distText.Outline = true
+		distText.Font = 2
+		distText.Visible = false
+
+		local healthText = Drawing.new("Text")
+		healthText.Size = 14
+		healthText.Color = Color3.fromRGB(0, 255, 0)
+		healthText.Center = true
+		healthText.Outline = true
+		healthText.Font = 2
+		healthText.Visible = false
+
+		local box = Drawing.new("Square")
+		box.Thickness = 2
+		box.Color = Color3.fromRGB(255, 255, 255)
+		box.Filled = false
+		box.Visible = false
+
+		espData[plr] = {
+			Name = nameText,
+			Distance = distText,
+			Health = healthText,
+			Box = box
+		}
+	end
+
+	local function removeESP(plr)
+		if espData[plr] then
+			for _, obj in pairs(espData[plr]) do
+				if obj.Remove then obj:Remove() end
+			end
+			espData[plr] = nil
+		end
+	end
+
+	local function updateESP()
+		for _, plr in pairs(Players:GetPlayers()) do
+			if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Head") then
+				local hrp = plr.Character.HumanoidRootPart
+				local head = plr.Character.Head
+				local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+
+				if hum and hum.Health > 0 then
+					createESP(plr)
+					local data = espData[plr]
+
+					local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+					local rootPos = Camera:WorldToViewportPoint(hrp.Position)
+
+					if onScreen then
+						local dist = math.floor((Camera.CFrame.Position - hrp.Position).Magnitude)
+
+						-- Name
+						data.Name.Text = plr.Name
+						data.Name.Position = Vector2.new(screenPos.X, screenPos.Y - 40)
+						data.Name.Visible = true
+
+						-- Distance
+						data.Distance.Text = dist .. "m"
+						data.Distance.Position = Vector2.new(screenPos.X, screenPos.Y - 20)
+						data.Distance.Visible = true
+
+						-- Health
+						data.Health.Text = math.floor(hum.Health) .. " HP"
+						data.Health.Position = Vector2.new(screenPos.X, screenPos.Y - 5)
+
+						-- Health color
+						local healthPercent = hum.Health / hum.MaxHealth
+						if healthPercent > 0.5 then
+							data.Health.Color = Color3.fromRGB(0, 255, 0)
+						elseif healthPercent > 0.25 then
+							data.Health.Color = Color3.fromRGB(255, 255, 0)
+						else
+							data.Health.Color = Color3.fromRGB(255, 0, 0)
+						end
+						data.Health.Visible = true
+
+						-- Box
+						local size = (Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0)).Y - Camera:WorldToViewportPoint(hrp.Position + Vector3.new(0, 2.5, 0)).Y) / 2
+						data.Box.Size = Vector2.new(size * 1.5, size * 2)
+						data.Box.Position = Vector2.new(rootPos.X - size * 0.75, rootPos.Y - size)
+						data.Box.Visible = true
+					else
+						data.Name.Visible = false
+						data.Distance.Visible = false
+						data.Health.Visible = false
+						data.Box.Visible = false
+					end
+				else
+					removeESP(plr)
+				end
+			else
+				removeESP(plr)
+			end
+		end
+	end
+
+	Players.PlayerRemoving:Connect(removeESP)
+
+	espConnection = RunService.RenderStepped:Connect(updateESP)
+	print("[FROSTY] ESP started!")
+end
+
+local function stopESP()
+	if espConnection then
+		espConnection:Disconnect()
+		espConnection = nil
+	end
+
+	for plr, data in pairs(espData) do
+		for _, obj in pairs(data) do
+			if obj.Remove then obj:Remove() end
+		end
+	end
+	espData = {}
+	print("[GABO] ESP stopped!")
+end
+
+-- FANTASMA PVP AIMBOT
+local function startFantasma()
+	if fantasmaConnection then return end
+
+	local UIS = UserInputService
+	local Camera = workspace.CurrentCamera
+	local aiming = false
+	local fovRadius = 150
+	local smoothing = 5
+
+	local function getClosestTarget()
+		local closestDist = math.huge
+		local targetPart = nil
+		local mousePos = UIS:GetMouseLocation()
+
+		for _, p in pairs(Players:GetPlayers()) do
+			if p ~= player and p.Character and p.Character:FindFirstChild("Head") then
+				local head = p.Character.Head
+				local hum = p.Character:FindFirstChildOfClass("Humanoid")
+				if hum and hum.Health > 0 then
+					local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+					if onScreen then
+						local dist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+						if dist < closestDist and dist <= fovRadius then
+							closestDist = dist
+							targetPart = head
+						end
+					end
+				end
+			end
+		end
+		return targetPart
+	end
+
+	local function moveMouseTowards(target)
+		local screenPos = Camera:WorldToViewportPoint(target.Position)
+		local mousePos = UIS:GetMouseLocation()
+		local dx = (screenPos.X - mousePos.X) / smoothing
+		local dy = (screenPos.Y - mousePos.Y) / smoothing
+		mousemoverel(dx, dy)
+	end
+
+	UIS.InputBegan:Connect(function(input, gp)
+		if not gp and input.UserInputType == Enum.UserInputType.MouseButton2 then
+			aiming = true
+		end
+	end)
+
+	UIS.InputEnded:Connect(function(input, gp)
+		if not gp and input.UserInputType == Enum.UserInputType.MouseButton2 then
+			aiming = false
+		end
+	end)
+
+	fantasmaConnection = RunService.RenderStepped:Connect(function()
+		if aiming then
+			local target = getClosestTarget()
+			if target then
+				moveMouseTowards(target)
+			end
+		end
+	end)
+
+	print("[GABO] Fantasma PVP started!")
+end
+
+local function stopFantasma()
+	if fantasmaConnection then
+		fantasmaConnection:Disconnect()
+		fantasmaConnection = nil
+		print("[FROSTY] Fantasma PVP stopped!")
+	end
+end
+
+-- CREATE INTRO
+local function createIntro()
+	local intro = Instance.new("ScreenGui")
+	intro.Name = "FrostyIntro"
+	intro.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	intro.Parent = playerGui
+
+	local bg = Instance.new("Frame")
+	bg.Size = UDim2.new(1, 0, 1, 0)
+	bg.BackgroundColor3 = Color3.new(0, 0, 0)
+	bg.BorderSizePixel = 0
+	bg.Parent = intro
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, 0, 0.3, 0)
+	title.Position = UDim2.new(0, 0, 0.35, 0)
+	title.BackgroundTransparency = 1
+	title.Text = "GABO"
+	title.TextColor3 = Color3.new(1, 1, 1)
+	title.TextScaled = true
+	title.Font = Enum.Font.Creepster
+	title.TextTransparency = 1
+	title.Parent = bg
+
+	-- Flashing effect (5 times)
+	spawn(function()
+		for i = 1, 5 do
+			title.TextTransparency = 0
+			wait(0.2)
+			title.TextTransparency = 1
+			wait(0.2)
+		end
+
+		-- Final reveal
+		title.TextTransparency = 0
+		wait(1)
+
+		-- Fade out
+		for i = 0, 10 do
+			title.TextTransparency = i / 10
+			bg.BackgroundTransparency = i / 10
+			wait(0.05)
+		end
+
+		intro:Destroy()
+	end)
+
+	print("[GABO] Intro playing!")
+end
+
+-- CREATE GUI
+local function createGUI()
+	print("[GABO] Creating GUI...")
+
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "FrostyHub"
+	gui.ResetOnSpawn = false
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	gui.Parent = playerGui
+
+	-- Main Frame
+	local main = Instance.new("Frame")
+	main.Name = "Main"
+	main.Size = UDim2.new(0, 450, 0, 500)
+	main.Position = UDim2.new(0.5, -225, 0.5, -250)
+	main.BackgroundColor3 = Color3.new(0, 0, 0)
+	main.BorderSizePixel = 0
+	main.Active = true
+	main.Draggable = true
+	main.Parent = gui
+
+	local mainCorner = Instance.new("UICorner")
+	mainCorner.CornerRadius = UDim.new(0, 15)
+	mainCorner.Parent = main
+
+	local mainStroke = Instance.new("UIStroke")
+	mainStroke.Color = Color3.new(1, 1, 1)
+	mainStroke.Thickness = 3
+	mainStroke.Parent = main
+
+	-- Header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 80)
+	header.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	header.BorderSizePixel = 0
+	header.Parent = main
+
+	local headerCorner = Instance.new("UICorner")
+	headerCorner.CornerRadius = UDim.new(0, 15)
+	headerCorner.Parent = header
+
+	local headerStroke = Instance.new("UIStroke")
+	headerStroke.Color = Color3.fromRGB(255, 255, 255)
+	headerStroke.Thickness = 2
+	headerStroke.Parent = header
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -100, 1, 0)
+	title.BackgroundTransparency = 1
+	title.Text = "☠ GABO☠ HUB ☠"
+	title.TextColor3 = Color3.new(1, 1, 1)
+	title.Font = Enum.Font.Creepster
+	title.TextSize = 36
+	title.Parent = header
+
+	-- Close Button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(0, 50, 0, 50)
+	closeBtn.Position = UDim2.new(1, -60, 0, 15)
+	closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	closeBtn.Text = "X"
+	closeBtn.TextColor3 = Color3.new(1, 1, 1)
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.TextSize = 24
+	closeBtn.Parent = header
+
+	local closeBtnCorner = Instance.new("UICorner")
+	closeBtnCorner.CornerRadius = UDim.new(1, 0)
+	closeBtnCorner.Parent = closeBtn
+
+	local closeBtnStroke = Instance.new("UIStroke")
+	closeBtnStroke.Color = Color3.fromRGB(255, 255, 255)
+	closeBtnStroke.Thickness = 2
+	closeBtnStroke.Parent = closeBtn
+
+	closeBtn.MouseButton1Click:Connect(function()
+		gui:Destroy()
+	end)
+
+	-- Scripts Container
+	local container = Instance.new("ScrollingFrame")
+	container.Size = UDim2.new(1, -30, 1, -110)
+	container.Position = UDim2.new(0, 15, 0, 90)
+	container.BackgroundTransparency = 1
+	container.BorderSizePixel = 0
+	container.ScrollBarThickness = 6
+	container.CanvasSize = UDim2.new(0, 0, 0, 0)
+	container.Parent = main
+
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 10)
+	layout.Parent = container
+
+	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		container.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+	end)
+
+	-- Function to create script button
+	local function addScript(name, displayName, desc, scriptType, callback)
+		local btn = Instance.new("Frame")
+		btn.Size = UDim2.new(1, -10, 0, 90)
+		btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+		btn.BorderSizePixel = 0
+		btn.Parent = container
+
+		local btnCorner = Instance.new("UICorner")
+		btnCorner.CornerRadius = UDim.new(0, 10)
+		btnCorner.Parent = btn
+
+		local btnStroke = Instance.new("UIStroke")
+		btnStroke.Color = Color3.fromRGB(80, 80, 80)
+		btnStroke.Thickness = 2
+		btnStroke.Parent = btn
+
+		local nameLabel = Instance.new("TextLabel")
+		nameLabel.Size = UDim2.new(0.6, 0, 0, 25)
+		nameLabel.Position = UDim2.new(0, 15, 0, 10)
+		nameLabel.BackgroundTransparency = 1
+		nameLabel.Text = displayName
+		nameLabel.TextColor3 = Color3.new(1, 1, 1)
+		nameLabel.Font = Enum.Font.SourceSansItalic
+		nameLabel.TextSize = 20
+		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+		nameLabel.Parent = btn
+
+		local descLabel = Instance.new("TextLabel")
+		descLabel.Size = UDim2.new(0.6, 0, 0, 20)
+		descLabel.Position = UDim2.new(0, 15, 0, 35)
+		descLabel.BackgroundTransparency = 1
+		descLabel.Text = desc
+		descLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+		descLabel.Font = Enum.Font.SourceSansItalic
+		descLabel.TextSize = 14
+		descLabel.TextXAlignment = Enum.TextXAlignment.Left
+		descLabel.TextWrapped = true
+		descLabel.Parent = btn
+
+		local typeLabel = Instance.new("TextLabel")
+		typeLabel.Size = UDim2.new(0.6, 0, 0, 18)
+		typeLabel.Position = UDim2.new(0, 15, 0, 60)
+		typeLabel.BackgroundTransparency = 1
+		typeLabel.Text = "⚰ " .. scriptType
+		typeLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+		typeLabel.Font = Enum.Font.SourceSansItalic
+		typeLabel.TextSize = 12
+		typeLabel.TextXAlignment = Enum.TextXAlignment.Left
+		typeLabel.Parent = btn
+
+		local toggleBtn = Instance.new("TextButton")
+		toggleBtn.Size = UDim2.new(0, 85, 0, 40)
+		toggleBtn.Position = UDim2.new(1, -95, 0.5, -20)
+		toggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+		toggleBtn.Text = "OFF"
+		toggleBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+		toggleBtn.Font = Enum.Font.SourceSansItalic
+		toggleBtn.TextSize = 18
+		toggleBtn.Parent = btn
+
+		local toggleCorner = Instance.new("UICorner")
+		toggleCorner.CornerRadius = UDim.new(0, 8)
+		toggleCorner.Parent = toggleBtn
+
+		local toggleStroke = Instance.new("UIStroke")
+		toggleStroke.Color = Color3.fromRGB(150, 150, 150)
+		toggleStroke.Thickness = 2
+		toggleStroke.Parent = toggleBtn
+
+		toggleBtn.MouseButton1Click:Connect(function()
+			scriptStates[name] = not scriptStates[name]
+
+			if scriptStates[name] then
+				toggleBtn.Text = "✓ ON"
+				toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+				toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+				toggleStroke.Color = Color3.new(1, 1, 1)
+				callback(true)
+			else
+				toggleBtn.Text = "OFF"
+				toggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+				toggleBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+				toggleStroke.Color = Color3.fromRGB(150, 150, 150)
+				callback(false)
+			end
+		end)
+	end
+
+	-- ADD SCRIPTS (ONLY 4)
+	addScript("loopBring", "Loop Bring All", "Teleports all players to you", "Built-in", function(state)
+		if state then
+			startLoopBring()
+		else
+			stopLoopBring()
+		end
+	end)
+
+	addScript("aimbot", "Aimbot", "Automatically aims at enemies", "Loadstring", function(state)
+		if state then
+			pcall(function()
+				loadstring(game:HttpGet("https://pastebin.com/raw/gZ28EDV1"))()
+			end)
+			print("[GAB] Aimbot executed")
+		end
+	end)
+
+	addScript("hitbox", "Hitbox Extender", "Makes player hitboxes bigger", "Built-in", function(state)
+		if state then
+			pcall(function()
+				local hitboxSize = 20
+				local hitboxEnabled = true
+
+				-- Create GUI
+				local screenGui = Insdadtance.new("ScreenGui")
+				screenGui.Name = "FrostyHitbox"
+				screenGui.ResetOnSpawn = false
+				screenGui.Parent = game:GetService("CoreGui")
+
+				local mainFrame = Instance.new("Frame")
+				mainFrame.Name = "MainFrame"
+				mainFrame.Size = UDim2.new(0, 300, 0, 160)
+				mainFrame.Position = UDim2.new(0.5, -150, 0.3, 0)
+				mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+				mainFrame.BorderSizePixel = 0
+				mainFrame.Active = true
+				mainFrame.Draggable = true
+				mainFrame.Visible = true
+				mainFrame.Parent = screenGui
+
+				local corner = Instance.new("UICorner")
+				corner.CornerRadius = UDim.new(0, 12)
+				corner.Parent = mainFrame
+
+				local stroke = Instance.new("UIStroke")
+				stroke.Color = Color3.fromRGB(255, 255, 255)
+				stroke.Thickness = 3
+				stroke.Parent = mainFrame
+
+				-- Header
+				local header = Instance.new("TextLabel")
+				header.Size = UDim2.new(1, -60, 0, 40)
+				header.Position = UDim2.new(0, 0, 0, 0)
+				header.BackgroundTransparency = 1
+				header.Text = "☠ HITBOX EXTENDER ☠"
+				header.TextColor3 = Color3.fromRGB(255, 255, 255)
+				header.Font = Enum.Font.SourceSansItalic
+				header.TextSize = 20
+				header.Parent = mainFrame
+
+				-- Hide/Show Button
+				local hideBtn = Instance.new("TextButton")
+				hideBtn.Size = UDim2.new(0, 40, 0, 40)
+				hideBtn.Position = UDim2.new(1, -45, 0, 0)
+				hideBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+				hideBtn.Text = "_"
+				hideBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+				hideBtn.Font = Enum.Font.GothamBold
+				hideBtn.TextSize = 24
+				hideBtn.Parent = mainFrame
+
+				local hideBtnCorner = Instance.new("UICorner")
+				hideBtnCorner.CornerRadius = UDim.new(1, 0)
+				hideBtnCorner.Parent = hideBtn
+
+				-- Size Label
+				local sizeLabel = Instance.new("TextLabel")
+				sizeLabel.Size = UDim2.new(1, -20, 0, 25)
+				sizeLabel.Position = UDim2.new(0, 10, 0, 50)
+				sizeLabel.BackgroundTransparency = 1
+				sizeLabel.Text = "Size: 20"
+				sizeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+				sizeLabel.Font = Enum.Font.SourceSansItalic
+				sizeLabel.TextSize = 18
+				sizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+				sizeLabel.Parent = mainFrame
+
+				-- Slider Background
+				local sliderBG = Instance.new("Frame")
+				sliderBG.Size = UDim2.new(1, -40, 0, 10)
+				sliderBG.Position = UDim2.new(0, 20, 0, 85)
+				sliderBG.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+				sliderBG.BorderSizePixel = 0
+				sliderBG.Parent = mainFrame
+
+				local sliderBGCorner = Instance.new("UICorner")
+				sliderBGCorner.CornerRadius = UDim.new(1, 0)
+				sliderBGCorner.Parent = sliderBG
+
+				-- Slider Fill
+				local sliderFill = Instance.new("Frame")
+				sliderFill.Size = UDim2.new(0.2, 0, 1, 0)
+				sliderFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				sliderFill.BorderSizePixel = 0
+				sliderFill.Parent = sliderBG
+
+				local sliderFillCorner = Instance.new("UICorner")
+				sliderFillCorner.CornerRadius = UDim.new(1, 0)
+				sliderFillCorner.Parent = sliderFill
+
+				-- Invisible Button for Slider
+				local sliderBtn = Instance.new("TextButton")
+				sliderBtn.Size = UDim2.new(1, -40, 0, 30)
+				sliderBtn.Position = UDim2.new(0, 20, 0, 75)
+				sliderBtn.BackgroundTransparency = 1
+				sliderBtn.Text = ""
+				sliderBtn.Parent = mainFrame
+
+				-- Toggle Button
+				local toggleBtn = Instance.new("TextButton")
+				toggleBtn.Size = UDim2.new(0, 100, 0, 35)
+				toggleBtn.Position = UDim2.new(0.5, -50, 0, 115)
+				toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+				toggleBtn.Text = "✓ ON"
+				toggleBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
+				toggleBtn.Font = Enum.Font.SourceSansItalic
+				toggleBtn.TextSize = 20
+				toggleBtn.Parent = mainFrame
+
+				local toggleCorner = Instance.new("UICorner")
+				toggleCorner.CornerRadius = UDim.new(0, 8)
+				toggleCorner.Parent = toggleBtn
+
+				local toggleStroke = Instance.new("UIStroke")
+				toggleStroke.Color = Color3.fromRGB(255, 255, 255)
+				toggleStroke.Thickness = 2
+				toggleStroke.Parent = toggleBtn
+
+				-- Hide/Show Functionality
+				local isHidden = false
+				hideBtn.MouseButton1Click:Connect(function()
+					isHidden = not isHidden
+					if isHidden then
+						mainFrame.Size = UDim2.new(0, 300, 0, 45)
+						header.Visible = true
+						hideBtn.Visible = true
+						sizeLabel.Visible = false
+						sliderBG.Visible = false
+						sliderBtn.Visible = false
+						toggleBtn.Visible = false
+						hideBtn.Text = "+"
+					else
+						mainFrame.Size = UDim2.new(0, 300, 0, 160)
+						header.Visible = true
+						hideBtn.Visible = true
+						sizeLabel.Visible = true
+						sliderBG.Visible = true
+						sliderBtn.Visible = true
+						toggleBtn.Visible = true
+						hideBtn.Text = "_"
+					end
+				end)
+
+				-- Slider Functionality
+				local dragging = false
+				sliderBtn.MouseButton1Down:Connect(function()
+					dragging = true
+				end)
+
+				UserInputService.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						dragging = false
+					end
+				end)
+
+				RunService.RenderStepped:Connect(function()
+					if dragging then
+						local mouse = UserInputService:GetMouseLocation()
+						local relativeX = math.clamp(mouse.X - sliderBG.AbsolutePosition.X, 0, sliderBG.AbsoluteSize.X)
+						local percentage = relativeX / sliderBG.AbsoluteSize.X
+
+						hitboxSize = math.floor(percentage * 99) + 1 -- 1 to 100
+						sizeLabel.Text = "Size: " .. hitboxSize
+						sliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+					end
+				end)
+
+				-- Toggle Functionality
+				toggleBtn.MouseButton1Click:Connect(function()
+					hitboxEnabled = not hitboxEnabled
+					if hitboxEnabled then
+						toggleBtn.Text = "✓ ON"
+						toggleBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
+					else
+						toggleBtn.Text = "✕ OFF"
+						toggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+
+						-- Reset all hitboxes
+						for _, plr in pairs(Players:GetPlayers()) do
+							if plr ~= player and plr.Character then
+								local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+								if hrp then
+									hrp.Size = Vector3.new(2, 2, 1)
+									hrp.Transparency = 1
+									hrp.CanCollide = false
+								end
+							end
+						end
+					end
+				end)
+
+				-- Hitbox Loop
+				RunService.RenderStepped:Connect(function()
+					if hitboxEnabled then
+						for _, plr in pairs(Players:GetPlayers()) do
+							if plr ~= player and plr.Character then
+								local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+								if hrp then
+									hrp.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+									hrp.Transparency = 0.8
+									hrp.CanCollide = false
+								end
+							end
+						end
+					end
+				end)
+
+				print("[GAB] Hitbox Extender loaded! (1-100 range)")
+			end)
+		end
+	end)
+
+	addScript("fantasma", "Fantasma PVP", "Custom aimbot with GUI controls", "Built-in", function(state)
+		if state then
+			pcall(function()
+				local UIS = UserInputService
+				local TweenService = game:GetService("TweenService")
+				local Camera = workspace.CurrentCamera
+
+				local aiming = false
+				local fovRadius = 150
+				local smoothing = 5
+				local scriptEnabled = true
+
+				-- Intro Screen
+				local introGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+				introGui.Name = "FantasmaIntro"
+				introGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+				local blackScreen = Instance.new("Frame", introGui)
+				blackScreen.Size = UDim2.new(1, 0, 1, 0)
+				blackScreen.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+				blackScreen.BorderSizePixel = 0
+				blackScreen.ZIndex = 10
+
+				local introText = Instance.new("TextLabel", blackScreen)
+				introText.Size = UDim2.new(0, 400, 0, 50)
+				introText.Position = UDim2.new(0.5, -200, 0.5, -25)
+				introText.BackgroundTransparency = 1
+				introText.Text = "made by gab and dev"
+				introText.TextColor3 = Color3.new(1, 1, 1)
+				introText.TextSize = 32
+				introText.Font = Enum.Font.GothamBold
+				introText.TextTransparency = 1
+				introText.ZIndex = 11
+
+				wait(0.5)
+				local fadeIn = TweenService:Create(introText, TweenInfo.new(1), {TextTransparency = 0})
+				fadeIn:Play()
+				fadeIn.Completed:Wait()
+				wait(2)
+				local fadeOut = TweenService:Create(introText, TweenInfo.new(0.8), {TextTransparency = 1})
+				local screenFadeOut = TweenService:Create(blackScreen, TweenInfo.new(0.8), {BackgroundTransparency = 1})
+				fadeOut:Play()
+				screenFadeOut:Play()
+				screenFadeOut.Completed:Wait()
+				introGui:Destroy()
+
+				-- Main GUI
+				local gui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+				gui.Name = "FantasmaPVP_GUI"
+
+				local frame = Instance.new("Frame", gui)
+				frame.Position = UDim2.new(0, 100, 0, 100)
+				frame.Size = UDim2.new(0, 250, 0, 115)
+				frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+				frame.BorderSizePixel = 2
+				frame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+				frame.Visible = true
+				frame.Active = true
+				frame.Draggable = true
+
+				local titleLabel = Instance.new("TextLabel", frame)
+				titleLabel.Size = UDim2.new(1, 0, 0, 20)
+				titleLabel.Position = UDim2.new(0, 0, 0, 0)
+				titleLabel.Text = "made by Gab and Dev"
+				titleLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+				titleLabel.BackgroundTransparency = 1
+				titleLabel.Font = Enum.Font.GothamBold
+				titleLabel.TextSize = 14
+
+				local statusLabel = Instance.new("TextLabel", frame)
+				statusLabel.Size = UDim2.new(1, 0, 0, 15)
+				statusLabel.Position = UDim2.new(0, 0, 0, 80)
+				statusLabel.Text = "Status: ENABLED"
+				statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+				statusLabel.BackgroundTransparency = 1
+				statusLabel.Font = Enum.Font.GothamBold
+				statusLabel.TextSize = 12
+
+				local label = Instance.new("TextLabel", frame)
+				label.Size = UDim2.new(1, 0, 0, 20)
+				label.Position = UDim2.new(0, 0, 0, 25)
+				label.Text = "Smoothing: 5"
+				label.TextColor3 = Color3.new(1, 1, 1)
+				label.BackgroundTransparency = 1
+
+				local slider = Instance.new("TextButton", frame)
+				slider.Size = UDim2.new(1, -20, 0, 20)
+				slider.Position = UDim2.new(0, 10, 0, 55)
+				slider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				slider.BorderSizePixel = 1
+				slider.BorderColor3 = Color3.fromRGB(255, 0, 0)
+				slider.Text = ""
+
+				local dragging = false
+				slider.MouseButton1Down:Connect(function()
+					dragging = true
+				end)
+
+				UIS.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						dragging = false
+					end
+				end)
+
+				RunService.RenderStepped:Connect(function()
+					if dragging then
+						local mouseX = UIS:GetMouseLocation().X
+						local relX = math.clamp(mouseX - slider.AbsolutePosition.X, 0, slider.AbsoluteSize.X)
+						local percentage = relX / slider.AbsoluteSize.X
+						smoothing = math.floor(percentage * 10)
+						label.Text = "Smoothing: " .. smoothing
+					end
+				end)
+
+				UIS.InputBegan:Connect(function(input)
+					if input.KeyCode == Enum.KeyCode.RightShift then
+						frame.Visible = not frame.Visible
+					elseif input.KeyCode == Enum.KeyCode.F then
+						scriptEnabled = not scriptEnabled
+						if scriptEnabled then
+							statusLabel.Text = "Status: ENABLED"
+							statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+						else
+							statusLabel.Text = "Status: DISABLED"
+							statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+							aiming = false
+						end
+					end
+				end)
+
+				local function getClosestTarget()
+					local closestDist = math.huge
+					local targetPart = nil
+					local mousePos = UIS:GetMouseLocation()
+
+					for _, p in pairs(Players:GetPlayers()) do
+						if p ~= player and p.Character and p.Character:FindFirstChild("Head") then
+							local head = p.Character.Head
+							local hum = p.Character:FindFirstChildOfClass("Humanoid")
+							if hum and hum.Health > 0 then
+								local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+								if onScreen then
+									local dist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+									if dist < closestDist and dist <= fovRadius then
+										closestDist = dist
+										targetPart = head
+									end
+								end
+							end
+						end
+					end
+					return targetPart
+				end
+
+				local function moveMouseTowards(target)
+					local screenPos = Camera:WorldToViewportPoint(target.Position)
+					local mousePos = UIS:GetMouseLocation()
+					local dx = (screenPos.X - mousePos.X) / (smoothing == 0 and 0.1 or smoothing)
+					local dy = (screenPos.Y - mousePos.Y) / (smoothing == 0 and 0.1 or smoothing)
+					mousemoverel(dx, dy)
+				end
+
+				UIS.InputBegan:Connect(function(input, gp)
+					if not gp and input.UserInputType == Enum.UserInputType.MouseButton2 then
+						aiming = true
+					end
+				end)
+
+				UIS.InputEnded:Connect(function(input, gp)
+					if not gp and input.UserInputType == Enum.UserInputType.MouseButton2 then
+						aiming = false
+					end
+				end)
+
+				RunService.RenderStepped:Connect(function()
+					if aiming and scriptEnabled then
+						local target = getClosestTarget()
+						if target then
+							moveMouseTowards(target)
+						end
+					end
+				end)
+			end)
+			print("[GAB] Fantasma PVP executed")
+		end
+	end)
+
+	addScript("esp", "ESP (Wallhack)", "See players through walls", "Built-in", function(state)
+		if state then
+			startESP()
+		else
+			stopESP()
+		end
+	end)
+
+	print("[GAB] GUI created successfully!")
+	return gui
+end
+
+-- MAIN EXECUTION
+print("[GAB] Loading hub...")
+
+-- Play intro first
+createIntro()
+wait(3) -- Wait for intro to finish
+
+-- Then show password
+local function createPasswordGUI()
+	local passGui = Instance.new("ScreenGui")
+	passGui.Name = "FrostyPassword"
+	passGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	passGui.Parent = playerGui
+
+	local passFrame = Instance.new("Frame")
+	passFrame.Size = UDim2.new(0, 400, 0, 250)
+	passFrame.Position = UDim2.new(0.5, -200, 0.5, -125)
+	passFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+	passFrame.BorderSizePixel = 0
+	passFrame.Parent = passGui
+
+	local passCorner = Instance.new("UICorner")
+	passCorner.CornerRadius = UDim.new(0, 15)
+	passCorner.Parent = passFrame
+
+	local passStroke = Instance.new("UIStroke")
+	passStroke.Color = Color3.new(1, 1, 1)
+	passStroke.Thickness = 3
+	passStroke.Parent = passFrame
+
+	local passTitle = Instance.new("TextLabel")
+	passTitle.Size = UDim2.new(1, 0, 0, 60)
+	passTitle.BackgroundTransparency = 1
+	passTitle.Text = "☠ GABO HUD ☠"
+	passTitle.TextColor3 = Color3.new(1, 1, 1)
+	passTitle.Font = Enum.Font.Creepster
+	passTitle.TextSize = 36
+	passTitle.Parent = passFrame
+
+	local passSubtitle = Instance.new("TextLabel")
+	passSubtitle.Size = UDim2.new(1, 0, 0, 30)
+	passSubtitle.Position = UDim2.new(0, 0, 0, 60)
+	passSubtitle.BackgroundTransparency = 1
+	passSubtitle.Text = "Enter Password"
+	passSubtitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+	passSubtitle.Font = Enum.Font.SourceSansItalic
+	passSubtitle.TextSize = 18
+	passSubtitle.Parent = passFrame
+
+	local passBox = Instance.new("TextBox")
+	passBox.Size = UDim2.new(0, 300, 0, 40)
+	passBox.Position = UDim2.new(0.5, -150, 0, 110)
+	passBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	passBox.Text = ""
+	passBox.PlaceholderText = "Password..."
+	passBox.TextColor3 = Color3.new(1, 1, 1)
+	passBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+	passBox.Font = Enum.Font.SourceSansItalic
+	passBox.TextSize = 18
+	passBox.ClearTextOnFocus = false
+	passBox.Parent = passFrame
+
+	local passBoxCorner = Instance.new("UICorner")
+	passBoxCorner.CornerRadius = UDim.new(0, 8)
+	passBoxCorner.Parent = passBox
+
+	local passBoxStroke = Instance.new("UIStroke")
+	passBoxStroke.Color = Color3.fromRGB(150, 150, 150)
+	passBoxStroke.Thickness = 2
+	passBoxStroke.Parent = passBox
+
+	local submitBtn = Instance.new("TextButton")
+	submitBtn.Size = UDim2.new(0, 150, 0, 40)
+	submitBtn.Position = UDim2.new(0.5, -75, 0, 170)
+	submitBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	submitBtn.Text = "SUBMIT"
+	submitBtn.TextColor3 = Color3.new(1, 1, 1)
+	submitBtn.Font = Enum.Font.SourceSansItalic
+	submitBtn.TextSize = 20
+	submitBtn.Parent = passFrame
+
+	local submitCorner = Instance.new("UICorner")
+	submitCorner.CornerRadius = UDim.new(0, 8)
+	submitCorner.Parent = submitBtn
+
+	local submitStroke = Instance.new("UIStroke")
+	submitStroke.Color = Color3.fromRGB(255, 255, 255)
+	submitStroke.Thickness = 2
+	submitStroke.Parent = submitBtn
+
+	local errorLabel = Instance.new("TextLabel")
+	errorLabel.Size = UDim2.new(1, 0, 0, 20)
+	errorLabel.Position = UDim2.new(0, 0, 1, -25)
+	errorLabel.BackgroundTransparency = 1
+	errorLabel.Text = ""
+	errorLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+	errorLabel.Font = Enum.Font.SourceSansItalic
+	errorLabel.TextSize = 14
+	errorLabel.Parent = passFrame
+
+	local correctPassword = "GABO-67" -- PASSWORD!
+
+	local function checkPassword()
+		if passBox.Text == correctPassword then
+			passGui:Destroy()
+			-- Don't play intro again, go straight to hub
+			local gui = createGUI()
+
+			-- Toggle with P key
+			UserInputService.InputBegan:Connect(function(input, gpe)
+				if gpe then return end
+				if input.KeyCode == Enum.KeyCode.P then
+					if gui and gui.Parent then
+						gui:FindFirstChild("Main").Visible = not gui:FindFirstChild("Main").Visible
+					end
+				end
+			end)
+
+			print("[GABO] Hub loaded! Press P to toggle!")
+		else
+			errorLabel.Text = "❌ Wrong Password!"
+			passBox.Text = ""
+			wait(2)
+			errorLabel.Text = ""
+		end
+	end
+
+	submitBtn.MouseButton1Click:Connect(checkPassword)
+
+	passBox.FocusLost:Connect(function(enterPressed)
+		if enterPressed then
+			checkPassword()
+		end
+	end)
+end
+
+createPasswordGUI()
+
+print("[GAB] Ready to use!")
