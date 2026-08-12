@@ -1,6 +1,6 @@
-local Event = game:GetService("ReplicatedStorage")
-Event:FireServer(
-    "AP Pistol",
+local Event = game:GetService("ReplicatedStorage").XYANFOLDER.LoadingScreenEvent 
+Event:FireServer( 
+    "Red Pill", 
     -0,
-    "roytjdf755875"
+    "roytjdf755875" 
 )
