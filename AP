@@ -1,6 +1,6 @@
 local Event = game:GetService("ReplicatedStorage").XYANFOLDER.LoadingScreenEvent 
 Event:FireServer( 
-    "Red Pill", 
+    "AP Pistol", 
     -0,
     "roytjdf755875" 
 )
