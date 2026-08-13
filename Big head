@@ -1,0 +1,298 @@
+-- Gui to Lua
+-- Version: 3.2
+
+-- Instances:
+
+local UI = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local SliderSize = Instance.new("Frame")
+local SlideBar = Instance.new("Frame")
+local UICorner = Instance.new("UICorner")
+local Knob = Instance.new("TextButton")
+local UICorner_2 = Instance.new("UICorner")
+local Filling = Instance.new("Frame")
+local UICorner_3 = Instance.new("UICorner")
+local TextLabel = Instance.new("TextLabel")
+local UITextSizeConstraint = Instance.new("UITextSizeConstraint")
+local UICorner_4 = Instance.new("UICorner")
+local UIGradient = Instance.new("UIGradient")
+local TextLabel_2 = Instance.new("TextLabel")
+local UITextSizeConstraint_2 = Instance.new("UITextSizeConstraint")
+local Frame_2 = Instance.new("Frame")
+local UIGradient_2 = Instance.new("UIGradient")
+local TextLabel_3 = Instance.new("TextLabel")
+local UITextSizeConstraint_3 = Instance.new("UITextSizeConstraint")
+local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint")
+
+--Properties:
+
+local UserInputService = game:GetService("UserInputService")
+
+UI.Name = "UI"
+UI.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+UI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+UI.ResetOnSpawn = false
+
+Frame.Parent = UI
+Frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Frame.BackgroundTransparency = 0.300
+Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Frame.BorderSizePixel = 0
+Frame.Position = UDim2.new(0, 472, 0, 269)
+Frame.Size = UDim2.new(0, 271, 0, 176)
+Frame.Active = true -- Importante ito para ma-detect ang input
+
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+Frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = Frame.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+Frame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Thickness = 3
+Stroke.Color = Color3.fromRGB(0, 0, 255) -- Light grey outline
+Stroke.Parent = Frame
+
+SliderSize.Name = "SliderSize"
+SliderSize.Parent = Frame
+SliderSize.BackgroundColor3 = Color3.fromRGB(71, 71, 71)
+SliderSize.BackgroundTransparency = 1.000
+SliderSize.BorderColor3 = Color3.fromRGB(0, 0, 0)
+SliderSize.BorderSizePixel = 0
+SliderSize.Position = UDim2.new(0, -4, 0, 115)
+SliderSize.Size = UDim2.new(0, 271, 0, 23)
+
+SlideBar.Name = "SlideBar"
+SlideBar.Parent = SliderSize
+SlideBar.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+SlideBar.BorderColor3 = Color3.fromRGB(0, 0, 0)
+SlideBar.BorderSizePixel = 0
+SlideBar.Position = UDim2.new(0, 23, 0, 10)
+SlideBar.Size = UDim2.new(0, 216, 0, 14)
+
+UICorner.Parent = SlideBar
+
+Knob.Name = "Knob"
+Knob.Parent = SlideBar
+Knob.AnchorPoint = Vector2.new(0.5, 0.5)
+Knob.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
+Knob.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Knob.BorderSizePixel = 0
+Knob.Position = UDim2.new(0, 7, 0, 7)
+Knob.Size = UDim2.new(0, 16, 0, 16)
+Knob.ZIndex = 3
+Knob.Font = Enum.Font.SourceSans
+Knob.Text = ""
+Knob.TextColor3 = Color3.fromRGB(0, 0, 0)
+Knob.TextSize = 14.000
+
+UICorner_2.CornerRadius = UDim.new(1, 0)
+UICorner_2.Parent = Knob
+
+Filling.Name = "Filling"
+Filling.Parent = SlideBar
+Filling.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Filling.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Filling.BorderSizePixel = 0
+Filling.Size = UDim2.new(0, 0, 0, 14)
+Filling.ZIndex = 2
+
+UICorner_3.Parent = Filling
+
+TextLabel.Parent = SliderSize
+TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel.BackgroundTransparency = 1.000
+TextLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+TextLabel.BorderSizePixel = 0
+TextLabel.Position = UDim2.new(0.608294606, 0, -1.01110816, 0)
+TextLabel.Size = UDim2.new(0.3347826, 0, 1.22506928, 0)
+TextLabel.ZIndex = 3
+TextLabel.Font = Enum.Font.SourceSans
+TextLabel.Text = "0"
+TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel.TextScaled = true
+TextLabel.TextSize = 14.000
+TextLabel.TextStrokeTransparency = 0.800
+TextLabel.TextWrapped = true
+TextLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+UITextSizeConstraint.Parent = TextLabel
+UITextSizeConstraint.MaxTextSize = 24
+
+UICorner_4.Parent = Frame
+
+UIGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(16, 16, 16)), ColorSequenceKeypoint.new(0.44, Color3.fromRGB(0, 0, 0)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(16, 16, 16))}
+UIGradient.Rotation = 57
+UIGradient.Parent = Frame
+
+TextLabel_2.Parent = Frame
+TextLabel_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel_2.BackgroundTransparency = 1.000
+TextLabel_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+TextLabel_2.BorderSizePixel = 0
+TextLabel_2.Position = UDim2.new(0.239852399, 0, 0.0397727266, 0)
+TextLabel_2.Size = UDim2.new(0, 141, 0, 50)
+TextLabel_2.Font = Enum.Font.GothamBold
+TextLabel_2.Text = "BIGHEAD"
+TextLabel_2.TextColor3 = Color3.fromRGB(190, 190, 190)
+TextLabel_2.TextScaled = true
+TextLabel_2.TextSize = 14.000
+TextLabel_2.TextStrokeTransparency = 0.600
+TextLabel_2.TextWrapped = true
+
+UITextSizeConstraint_2.Parent = TextLabel_2
+UITextSizeConstraint_2.MaxTextSize = 48
+
+Frame_2.Parent = Frame
+Frame_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Frame_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Frame_2.BorderSizePixel = 0
+Frame_2.Position = UDim2.new(0, 8, 0, 62)
+Frame_2.Size = UDim2.new(0, 248, 0, 1)
+
+UIGradient_2.Transparency = NumberSequence.new{NumberSequenceKeypoint.new(0.00, 0.86), NumberSequenceKeypoint.new(0.22, 0.34), NumberSequenceKeypoint.new(0.82, 0.46), NumberSequenceKeypoint.new(1.00, 0.88)}
+UIGradient_2.Parent = Frame_2
+
+TextLabel_3.Parent = Frame
+TextLabel_3.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel_3.BackgroundTransparency = 1.000
+TextLabel_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
+TextLabel_3.BorderSizePixel = 0
+TextLabel_3.Position = UDim2.new(0, 6, 0, 64)
+TextLabel_3.Size = UDim2.new(0, 200, 0, 50)
+TextLabel_3.Font = Enum.Font.GothamBold
+TextLabel_3.Text = "Bypass Gab"
+TextLabel_3.TextColor3 = Color3.fromRGB(159, 159, 159)
+TextLabel_3.TextScaled = true
+TextLabel_3.TextSize = 28.000
+TextLabel_3.TextStrokeTransparency = 0.800
+TextLabel_3.TextWrapped = true
+TextLabel_3.TextXAlignment = Enum.TextXAlignment.Left
+TextLabel_3.TextYAlignment = Enum.TextYAlignment.Top
+
+UITextSizeConstraint_3.Parent = TextLabel_3
+UITextSizeConstraint_3.MaxTextSize = 28
+
+UIAspectRatioConstraint.Parent = Frame
+UIAspectRatioConstraint.AspectRatio = 1.540
+
+-- Scripts:
+
+local function OFBCBY_fake_script() -- Knob.LocalScript 
+	local script = Instance.new('LocalScript', Knob)
+
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local Debris = game:GetService("Debris")
+	local Players = game:GetService("Players")
+	local RunService = game:GetService("RunService")
+	local inputService = game:GetService("UserInputService")
+
+	local knob = script.Parent
+	local sliderBar = knob.Parent
+	local filling = sliderBar:FindFirstChild("Filling")
+	local valueLabel = sliderBar.Parent:FindFirstChild("TextLabel") or sliderBar.Parent:FindFirstChildWhichIsA("TextLabel")
+
+	local dragging = false
+	_G.CurrentSizeValue = 1
+	_G.BigheadMasterState = false
+
+	local function startBypass()
+		for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
+			if obj.Name == "Unknown" then
+				obj:Destroy()
+			end
+		end
+		ReplicatedStorage.DescendantAdded:Connect(function(obj)
+			if obj.Name == "Unknown" then
+				obj:Destroy()
+			end
+		end)
+		task.wait(0.5)
+		_G.BigheadMasterState = true
+	end
+
+	local function applyESPAndLogic(player)
+		if player == Players.LocalPlayer then return end
+		local function updateCharacter(char)
+			local highlight = char:FindFirstChild("Highlight") or Instance.new("Highlight")
+			highlight.Name = "Highlight"
+			highlight.FillTransparency = 1
+			highlight.OutlineColor = Color3.fromRGB(0, 0, 127)
+			highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			highlight.Parent = char
+		end
+		player.CharacterAdded:Connect(updateCharacter)
+		if player.Character then updateCharacter(player.Character) end
+	end
+
+	_G.ApplyToPlayer = function(v)
+		if v ~= Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
+			pcall(function()
+				local head = v.Character.Head
+				local s = _G.CurrentSizeValue
+				head.Size = Vector3.new(s, s, s)
+				head.Transparency = 0.4
+				head.BrickColor = BrickColor.new("Really red")
+				head.Material = Enum.Material.Neon
+				head.CanCollide = false
+				head.Massless = true
+			end)
+		end
+	end
+
+	knob.MouseButton1Down:Connect(function() dragging = true end)
+	inputService.InputEnded:Connect(function(input) 
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end 
+	end)
+
+	RunService.RenderStepped:Connect(function()
+		if _G.BigheadMasterState then
+			for _, p in ipairs(Players:GetPlayers()) do
+				_G.ApplyToPlayer(p)
+			end
+		end
+		if dragging then
+			local mouseX = inputService:GetMouseLocation().X
+			local percent = math.clamp((mouseX - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X, 0, 1)
+			knob.Position = UDim2.new(percent, 0, 0.5, 0)
+			if filling then filling.Size = UDim2.new(percent, 0, 1, 0) end
+			_G.CurrentSizeValue = math.floor(1 + (9 * percent))
+			if valueLabel then valueLabel.Text = tostring(_G.CurrentSizeValue) end
+		end
+	end)
+
+	startBypass()
+	for _, p in ipairs(Players:GetPlayers()) do applyESPAndLogic(p) end
+	Players.PlayerAdded:Connect(applyESPAndLogic)
+end
+coroutine.wrap(OFBCBY_fake_script)()
